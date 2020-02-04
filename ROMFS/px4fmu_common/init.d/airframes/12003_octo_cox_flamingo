@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# @name Flamingo Octo coaxial geometry (PMEN)
+# @name Flamingo Octo coaxial geometry
 #
 # @type Octorotor Coaxial
 # @class Copter
