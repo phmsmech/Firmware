@@ -14,7 +14,7 @@
 # @output MAIN7 motor 7
 # @output MAIN8 motor 8
 #
-# @maintainer Lorenz Meier <lorenz@px4.io>
+# @maintainer PMEN
 #
 
 sh /etc/init.d/rc.mc_defaults

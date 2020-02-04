@@ -61,6 +61,7 @@ px4_add_romfs_files(
 	mount_legs.aux.mix
 	ocpoc_quad_x.main.mix
 	octo_cox.main.mix
+	octo_cox_flamingo.main.mix
 	octo_cox_w.main.mix
 	octo_+.main.mix
 	octo_x.main.mix
