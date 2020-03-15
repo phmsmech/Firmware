@@ -66,6 +66,7 @@
 #include <uORB/topics/vehicle_local_position_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_trajectory_waypoint.h>
+#include <uORB/topics/vehicle_vector_thrust_setpoint.h>
 
 #include "PositionControl.hpp"
 #include "Utility/ControlMath.hpp"
@@ -113,6 +114,8 @@ private:
 
 	orb_id_t _attitude_setpoint_id{nullptr};
 
+	orb_advert_t	_vt_sp_pub {nullptr};
+
 	uORB::Publication<landing_gear_s>			_landing_gear_pub{ORB_ID(landing_gear)};
 	uORB::Publication<vehicle_local_position_setpoint_s>	_local_pos_sp_pub{ORB_ID(vehicle_local_position_setpoint)};	/**< vehicle local position setpoint publication */
 	uORB::Publication<vehicle_local_position_setpoint_s>	_traj_sp_pub{ORB_ID(trajectory_setpoint)};			/**< trajectory setpoints publication */
@@ -146,6 +149,8 @@ private:
 	vehicle_local_position_s _local_pos{};			/**< vehicle local position */
 	home_position_s	_home_pos{};			/**< home position */
 	landing_gear_s _landing_gear{};
+	vehicle_vector_thrust_setpoint_s _vt_sp{};	/**< vehicle vector thrust setpoint */
+
 	int8_t _old_landing_gear_position{landing_gear_s::GEAR_KEEP};
 
 	DEFINE_PARAMETERS(
@@ -232,6 +237,11 @@ private:
 	 * Publish attitude.
 	 */
 	void publish_attitude();
+
+	/**
+	 * Publish vector thrust setpoint.
+	 */
+	void publish_vector_thrust();
 
 	/**
 	 * Adjust the setpoint during landing.
@@ -698,17 +708,15 @@ MulticopterPositionControl::Run()
 			}
 
 			// PMEN - MODIFICATIONS TO INCLUDE VECTOR THRUST
-
 			// Fill attitude setpoint. Attitude is computed from yaw and thrust setpoint.
-			// PMEN: ORIGINAL LINE
-			//_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust), local_pos_sp.yaw);
-			// PMEN: ORIGINAL LINE END
-			float vec_thr_scl = ((float)_param_mpc_vec_thr_en.get() * _param_mpc_vec_thr_scl.get());
-			//TODO: NEED TO INCLUDE publish_vecthrust() and new uorb message
+			float vec_thr_scl = ((float)_param_mpc_vec_thr_en.get() * _param_mpc_vec_thr_scl.get()); // PMEN Changes
+			_vt_sp.thrust_n = local_pos_sp.thrust[0] * vec_thr_scl; // PMEN Changes - TODO:ROTATION
+			_vt_sp.thrust_e = local_pos_sp.thrust[1] * vec_thr_scl; // PMEN Changes - TODO:ROTATION
+			//TODO: ADD CONVERSION/ROTATION
 
 			_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust[0] * (1.0f - vec_thr_scl),
-								local_pos_sp.thrust[1] * (1.0f- vec_thr_scl),
-								local_pos_sp.thrust[2]), local_pos_sp.yaw);
+								local_pos_sp.thrust[1] * (1.0f - vec_thr_scl),
+								local_pos_sp.thrust[2]), local_pos_sp.yaw); // PMEN Changes
 			_att_sp.yaw_sp_move_rate = _control.getYawspeedSetpoint();
 			_att_sp.fw_control_yaw = false;
 			_att_sp.apply_flaps = false;
@@ -718,6 +726,7 @@ MulticopterPositionControl::Run()
 			// an attitude setpoint is because for non-flighttask modes
 			// the attitude septoint should come from another source, otherwise
 			// they might conflict with each other such as in offboard attitude control.
+			publish_vector_thrust();  // PMEN Changes
 			publish_attitude();
 
 			// if there's any change in landing gear setpoint publish it
@@ -1060,6 +1069,20 @@ MulticopterPositionControl::publish_attitude()
 		_att_sp_pub = orb_advertise(_attitude_setpoint_id, &_att_sp);
 	}
 }
+
+void
+MulticopterPositionControl::publish_vector_thrust()
+{
+	_vt_sp.timestamp = hrt_absolute_time();
+
+	if (_vt_sp_pub != nullptr) {
+		orb_publish(ORB_ID(vehicle_vector_thrust_setpoint), _vt_sp_pub, &_vt_sp);
+
+	} else {
+		_vt_sp_pub = orb_advertise(ORB_ID(vehicle_vector_thrust_setpoint), &_vt_sp);
+	}
+}
+
 
 void MulticopterPositionControl::check_failure(bool task_failure, uint8_t nav_state)
 {
