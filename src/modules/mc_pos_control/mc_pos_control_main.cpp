@@ -163,10 +163,12 @@ private:
 		(ParamInt<px4::params::MPC_ALT_MODE>) _param_mpc_alt_mode,
 		(ParamFloat<px4::params::MPC_SPOOLUP_TIME>) _param_mpc_spoolup_time, /**< time to let motors spool up after arming */
 		(ParamFloat<px4::params::MPC_TILTMAX_LND>) _param_mpc_tiltmax_lnd, /**< maximum tilt for landing and smooth takeoff */
-		(ParamFloat<px4::params::MPC_THR_MIN>)_param_mpc_thr_min,
-		(ParamFloat<px4::params::MPC_THR_HOVER>)_param_mpc_thr_hover,
-		(ParamFloat<px4::params::MPC_THR_MAX>)_param_mpc_thr_max,
-		(ParamFloat<px4::params::MPC_Z_VEL_P>)_param_mpc_z_vel_p
+		(ParamFloat<px4::params::MPC_THR_MIN>) _param_mpc_thr_min,
+		(ParamFloat<px4::params::MPC_THR_HOVER>) _param_mpc_thr_hover,
+		(ParamFloat<px4::params::MPC_THR_MAX>) _param_mpc_thr_max,
+		(ParamFloat<px4::params::MPC_Z_VEL_P>) _param_mpc_z_vel_p,
+		(ParamInt<px4::params::MPC_VEC_THR_EN>) _param_mpc_vec_thr_en,  /**< enable vector thrust*/
+		(ParamFloat<px4::params::MPC_VEC_THR_SCL>) _param_mpc_vec_thr_scl  /**< scaling for vector thrust mode */
 	);
 
 	control::BlockDerivative _vel_x_deriv; /**< velocity derivative in x */
@@ -695,8 +697,18 @@ MulticopterPositionControl::Run()
 				limit_thrust_during_landing(local_pos_sp);
 			}
 
+			// PMEN - MODIFICATIONS TO INCLUDE VECTOR THRUST
+
 			// Fill attitude setpoint. Attitude is computed from yaw and thrust setpoint.
-			_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust), local_pos_sp.yaw);
+			// PMEN: ORIGINAL LINE
+			//_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust), local_pos_sp.yaw);
+			// PMEN: ORIGINAL LINE END
+			float vec_thr_scl = ((float)_param_mpc_vec_thr_en.get() * _param_mpc_vec_thr_scl.get());
+			//TODO: NEED TO INCLUDE publish_vecthrust() and new uorb message
+
+			_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust[0] * (1.0f - vec_thr_scl),
+								local_pos_sp.thrust[1] * (1.0f- vec_thr_scl),
+								local_pos_sp.thrust[2]), local_pos_sp.yaw);
 			_att_sp.yaw_sp_move_rate = _control.getYawspeedSetpoint();
 			_att_sp.fw_control_yaw = false;
 			_att_sp.apply_flaps = false;

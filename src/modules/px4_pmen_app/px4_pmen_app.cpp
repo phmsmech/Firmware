@@ -23,7 +23,7 @@ extern "C" __EXPORT int px4_pmen_app_main(int argc, char *argv[]);
 
 int px4_pmen_app_main(int argc, char *argv[])
 {
-    /* subscribe to sensor_combined topic */
+	/* subscribe to sensor_combined topic */
 	int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));
 	int actuator_outputs_sub_fd = orb_subscribe(ORB_ID(actuator_outputs));
 
@@ -31,15 +31,15 @@ int px4_pmen_app_main(int argc, char *argv[])
 	orb_set_interval(sensor_sub_fd, 200);
 	orb_set_interval(actuator_outputs_sub_fd, 200);
 
-        /* advertise attitude topic */
+	/* advertise attitude topic */
 	struct vehicle_attitude_s att;
 	memset(&att, 0, sizeof(att));
 	orb_advert_t att_pub = orb_advertise(ORB_ID(vehicle_attitude), &att);
 
-    /* one could wait for multiple topics with this technique, just using one here */
+	/* one could wait for multiple topics with this technique, just using one here */
 	px4_pollfd_struct_t fds[2] = {
-        { .fd = actuator_outputs_sub_fd,   .events = POLLIN },
-        { .fd = sensor_sub_fd,   .events = POLLIN },
+		{ .fd = actuator_outputs_sub_fd,   .events = POLLIN },
+		{ .fd = sensor_sub_fd,   .events = POLLIN },
 		/* there could be more file descriptors here, in the form like:
 		 * { .fd = other_sub_fd,   .events = POLLIN },
 		 */
@@ -69,14 +69,14 @@ int px4_pmen_app_main(int argc, char *argv[])
 
 			if (fds[0].revents & POLLIN) {
 				/* obtained data for the first file descriptor */
-				struct actuator_outputs_s _actuator_outputs{};
+				struct actuator_outputs_s _actuator_outputs {};
 				/* copy sensors raw data into local buffer */
 				orb_copy(ORB_ID(actuator_outputs), actuator_outputs_sub_fd, &_actuator_outputs);
 				PX4_INFO("Outputs: %8.4f | %8.4f | %8.4f | %8.4f\n",
-					(double)_actuator_outputs.output[0],
-					(double)_actuator_outputs.output[1],
-					(double)_actuator_outputs.output[2],
-					(double)_actuator_outputs.output[3]
+					 (double)_actuator_outputs.output[0],
+					 (double)_actuator_outputs.output[1],
+					 (double)_actuator_outputs.output[2],
+					 (double)_actuator_outputs.output[3]
 					);
 			}
 
@@ -86,12 +86,12 @@ int px4_pmen_app_main(int argc, char *argv[])
 				/* copy sensors raw data into local buffer */
 				orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
 				PX4_INFO("Accelerometer: %8.4f | %8.4f | %8.4f\n\t\t\t      Gyro: %8.4f | %8.4f | %8.4f\n",
-					(double)raw.accelerometer_m_s2[0],
-					(double)raw.accelerometer_m_s2[1],
-					(double)raw.accelerometer_m_s2[2],
-					(double)raw.gyro_rad[0],
-					(double)raw.gyro_rad[1],
-					(double)raw.gyro_rad[2]
+					 (double)raw.accelerometer_m_s2[0],
+					 (double)raw.accelerometer_m_s2[1],
+					 (double)raw.accelerometer_m_s2[2],
+					 (double)raw.gyro_rad[0],
+					 (double)raw.gyro_rad[1],
+					 (double)raw.gyro_rad[2]
 					);
 
 				att.q[0] = raw.accelerometer_m_s2[0];
