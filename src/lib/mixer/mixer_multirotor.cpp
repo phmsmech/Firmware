@@ -253,6 +253,7 @@ void MultirotorMixer::mix_airmode_rp(float roll, float pitch, float yaw, float t
 {
 	// Airmode for roll and pitch, but not yaw
 
+	//TODO: PMEN - ADD HERE VECTOR THRUST
 	// Mix without yaw
 	for (unsigned i = 0; i < _rotor_count; i++) {
 		outputs[i] = roll * _rotors[i].roll_scale +

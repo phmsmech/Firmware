@@ -58,6 +58,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/landing_gear.h>
+#include <uORB/topics/vehicle_vector_thrust_setpoint.h>
 #include <vtol_att_control/vtol_type.h>
 
 #include <AttitudeControl.hpp>
@@ -130,6 +131,13 @@ private:
 	 */
 	void		control_attitude();
 
+
+	/**
+	 * Vector Thrust controller.
+	 */
+	void		control_vector_thrust();
+
+
 	/**
 	 * Attitude rates controller.
 	 */
@@ -149,6 +157,7 @@ private:
 	uORB::Subscription _battery_status_sub{ORB_ID(battery_status)};			/**< battery status subscription */
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};	/**< vehicle land detected subscription */
 	uORB::Subscription _landing_gear_sub{ORB_ID(landing_gear)};
+	uORB::Subscription _v_vt_sp_sub{ORB_ID(vehicle_vector_thrust_setpoint)};    	/**< vehicle vector thrust setpoint subscription */
 
 	uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
 
@@ -174,6 +183,7 @@ private:
 	struct battery_status_s			_battery_status {};	/**< battery status */
 	struct vehicle_land_detected_s		_vehicle_land_detected {};
 	struct landing_gear_s 			_landing_gear {};
+	struct vehicle_vector_thrust_setpoint_s _v_vt_sp {}; 		/**< vehicle vector thrust setpoint */
 
 	MultirotorMixer::saturation_status _saturation_status{};
 
@@ -183,6 +193,7 @@ private:
 	float _loop_update_rate_hz{initial_update_rate_hz};          /**< current rate-controller loop update rate in [Hz] */
 
 	matrix::Vector3f _rates_sp;			/**< angular rates setpoint */
+	matrix::Vector3f _vector_thrust_sp;		/**< vector thrust setpoint */
 
 	matrix::Vector3f _att_control;			/**< attitude control vector */
 	float		_thrust_sp{0.0f};		/**< thrust setpoint */

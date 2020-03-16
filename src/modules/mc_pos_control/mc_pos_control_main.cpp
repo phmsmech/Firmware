@@ -114,7 +114,7 @@ private:
 
 	orb_id_t _attitude_setpoint_id{nullptr};
 
-	orb_advert_t	_vt_sp_pub {nullptr};
+	orb_advert_t	_vt_sp_pub {nullptr}; 	/**< vehicle vector thrust setpoint publication */
 
 	uORB::Publication<landing_gear_s>			_landing_gear_pub{ORB_ID(landing_gear)};
 	uORB::Publication<vehicle_local_position_setpoint_s>	_local_pos_sp_pub{ORB_ID(vehicle_local_position_setpoint)};	/**< vehicle local position setpoint publication */
@@ -710,9 +710,9 @@ MulticopterPositionControl::Run()
 			// PMEN - MODIFICATIONS TO INCLUDE VECTOR THRUST
 			// Fill attitude setpoint. Attitude is computed from yaw and thrust setpoint.
 			float vec_thr_scl = ((float)_param_mpc_vec_thr_en.get() * _param_mpc_vec_thr_scl.get()); // PMEN Changes
-			_vt_sp.thrust_n = local_pos_sp.thrust[0] * vec_thr_scl; // PMEN Changes - TODO:ROTATION
-			_vt_sp.thrust_e = local_pos_sp.thrust[1] * vec_thr_scl; // PMEN Changes - TODO:ROTATION
-			//TODO: ADD CONVERSION/ROTATION
+			_vt_sp.thrust_n = local_pos_sp.thrust[0] * vec_thr_scl; // PMEN Changes - TODO:ROTATION?
+			_vt_sp.thrust_e = local_pos_sp.thrust[1] * vec_thr_scl; // PMEN Changes - TODO:ROTATION?
+			//TODO: CHECK IF local_pos_sp.thrust[2] ALSO NEEDS TO BE SCALED TO COMPENSATE FOR VEC THRU
 
 			_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust[0] * (1.0f - vec_thr_scl),
 								local_pos_sp.thrust[1] * (1.0f - vec_thr_scl),

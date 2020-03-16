@@ -66,6 +66,7 @@ MulticopterAttitudeControl::MulticopterAttitudeControl() :
 	_v_att_sp.q_d[0] = 1.f;
 
 	_rates_sp.zero();
+	_vector_thrust_sp.zero();
 	_thrust_sp = 0.0f;
 	_att_control.zero();
 
@@ -362,6 +363,28 @@ MulticopterAttitudeControl::control_attitude()
 	_rates_sp = _attitude_control.update(Quatf(_v_att.q), Quatf(_v_att_sp.q_d), _v_att_sp.yaw_sp_move_rate);
 }
 
+/**
+ * Vector Thrust controller.
+ * Input: 'vehicle_vector_thrust_setpoint'
+ * Output: '_rates_sp' vector, '_thrust_sp'
+ */
+void
+MulticopterAttitudeControl::control_vector_thrust()
+{
+	_v_vt_sp_sub.update(&_v_vt_sp);
+
+	// reinitialize the setpoint while not armed to make sure no value from the last mode or flight is still kept
+	if (!_v_control_mode.flag_armed) {
+		_v_vt_sp.thrust_n = 0.0f;
+		_v_vt_sp.thrust_e = 0.0f;
+	}
+
+	_vector_thrust_sp(0) = _v_vt_sp.thrust_n;
+	_vector_thrust_sp(1) = _v_vt_sp.thrust_e;
+	_vector_thrust_sp(2) = _v_att_sp.thrust_body[2]; //TODO: PMEN - taken from attitude setpoint (needs to check if this is necessary)
+
+}
+
 /*
  * Attitude rates controller.
  * Input: '_rates_sp' vector, '_thrust_sp'
@@ -406,6 +429,7 @@ MulticopterAttitudeControl::publish_rate_controller_status()
 void
 MulticopterAttitudeControl::publish_actuator_controls()
 {
+	//TODO: PMEN ADD PUBLICATION TO ACTUATOR CONTROL HERE
 	_actuators.control[0] = (PX4_ISFINITE(_att_control(0))) ? _att_control(0) : 0.0f;
 	_actuators.control[1] = (PX4_ISFINITE(_att_control(1))) ? _att_control(1) : 0.0f;
 	_actuators.control[2] = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
@@ -503,6 +527,7 @@ MulticopterAttitudeControl::Run()
 				}
 
 				control_attitude();
+				control_vector_thrust();
 
 				if (_v_control_mode.flag_control_yawrate_override_enabled) {
 					/* Yaw rate override enabled, overwrite the yaw setpoint */
