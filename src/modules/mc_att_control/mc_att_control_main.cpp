@@ -374,7 +374,8 @@ MulticopterAttitudeControl::control_vector_thrust()
 	_v_vt_sp_sub.update(&_v_vt_sp);
 
 	// reinitialize the setpoint while not armed to make sure no value from the last mode or flight is still kept
-	if (!_v_control_mode.flag_armed) {
+	if (!_v_control_mode.flag_armed || (!_v_control_mode.flag_control_position_enabled
+					    && !_v_control_mode.flag_control_velocity_enabled)) {
 		_v_vt_sp.thrust_n = 0.0f;
 		_v_vt_sp.thrust_e = 0.0f;
 	}
@@ -385,6 +386,7 @@ MulticopterAttitudeControl::control_vector_thrust()
 	_vector_thrust_sp(1) = math::constrain(_vector_thrust_sp(1), -1.0f, 1.0f);
 	_vector_thrust_sp(2) = 0.0f  ; //TODO: PMEN - from attitude setpoint (needs to check if this is necessary)
 	//ROTATION (CHECK IF SHOULD BE TRANSPOSED)
+
 
 }
 
