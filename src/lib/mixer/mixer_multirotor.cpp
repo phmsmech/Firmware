@@ -44,6 +44,7 @@
 #include <cstdio>
 
 #include <mathlib/mathlib.h>
+#include "vector_thrust_mix.h"
 
 #ifdef MIXER_MULTIROTOR_USE_MOCK_GEOMETRY
 enum class MultirotorGeometry : MultirotorGeometryUnderlyingType {
@@ -249,16 +250,18 @@ void MultirotorMixer::minimize_saturation(const float *desaturation_vector, floa
 	}
 }
 
-void MultirotorMixer::mix_airmode_rp(float roll, float pitch, float yaw, float thrust, float *outputs)
+void MultirotorMixer::mix_airmode_rp(float roll, float pitch, float yaw, float thrust, float thrust_x, float thrust_y,
+				     float *outputs)
 {
 	// Airmode for roll and pitch, but not yaw
-
-	//TODO: PMEN - ADD HERE VECTOR THRUST
+	//TODO: PMEN - ADD HERE VECTOR THRUST (NEED TO INCLUDE A HEADER DEFINING _rotors ADDITIONAL COL VECTOR MIXER)
 	// Mix without yaw
 	for (unsigned i = 0; i < _rotor_count; i++) {
 		outputs[i] = roll * _rotors[i].roll_scale +
 			     pitch * _rotors[i].pitch_scale +
-			     thrust * _rotors[i].thrust_scale;
+			     thrust * _rotors[i].thrust_scale +
+			     thrust_x * multirotor_vt_config[i].vtx_scale + // PMEN - Including Vector Thrust Mixer
+			     thrust_y * multirotor_vt_config[i].vty_scale;  // PMEN - Including Vector Thrust Mixer
 
 		// Thrust will be used to unsaturate if needed
 		_tmp_array[i] = _rotors[i].thrust_scale;
@@ -270,16 +273,18 @@ void MultirotorMixer::mix_airmode_rp(float roll, float pitch, float yaw, float t
 	mix_yaw(yaw, outputs);
 }
 
-void MultirotorMixer::mix_airmode_rpy(float roll, float pitch, float yaw, float thrust, float *outputs)
+void MultirotorMixer::mix_airmode_rpy(float roll, float pitch, float yaw, float thrust, float thrust_x, float thrust_y,
+				      float *outputs)
 {
 	// Airmode for roll, pitch and yaw
-
 	// Do full mixing
 	for (unsigned i = 0; i < _rotor_count; i++) {
 		outputs[i] = roll * _rotors[i].roll_scale +
 			     pitch * _rotors[i].pitch_scale +
 			     yaw * _rotors[i].yaw_scale +
-			     thrust * _rotors[i].thrust_scale;
+			     thrust * _rotors[i].thrust_scale +
+			     thrust_x * multirotor_vt_config[i].vtx_scale + // PMEN - Including Vector Thrust Mixer
+			     thrust_y * multirotor_vt_config[i].vty_scale;  // PMEN - Including Vector Thrust Mixer
 
 		// Thrust will be used to unsaturate if needed
 		_tmp_array[i] = _rotors[i].thrust_scale;
@@ -296,7 +301,8 @@ void MultirotorMixer::mix_airmode_rpy(float roll, float pitch, float yaw, float 
 	minimize_saturation(_tmp_array, outputs, _saturation_status);
 }
 
-void MultirotorMixer::mix_airmode_disabled(float roll, float pitch, float yaw, float thrust, float *outputs)
+void MultirotorMixer::mix_airmode_disabled(float roll, float pitch, float yaw, float thrust, float thrust_x,
+		float thrust_y, float *outputs)
 {
 	// Airmode disabled: never allow to increase the thrust to unsaturate a motor
 
@@ -304,7 +310,9 @@ void MultirotorMixer::mix_airmode_disabled(float roll, float pitch, float yaw, f
 	for (unsigned i = 0; i < _rotor_count; i++) {
 		outputs[i] = roll * _rotors[i].roll_scale +
 			     pitch * _rotors[i].pitch_scale +
-			     thrust * _rotors[i].thrust_scale;
+			     thrust * _rotors[i].thrust_scale +
+			     thrust_x * multirotor_vt_config[i].vtx_scale + // PMEN - Including Vector Thrust Mixer
+			     thrust_y * multirotor_vt_config[i].vty_scale;  // PMEN - Including Vector Thrust Mixer
 
 		// Thrust will be used to unsaturate if needed
 		_tmp_array[i] = _rotors[i].thrust_scale;
@@ -364,22 +372,25 @@ MultirotorMixer::mix(float *outputs, unsigned space)
 	float yaw     = math::constrain(get_control(0, 2) * _yaw_scale, -1.0f, 1.0f);
 	float thrust  = math::constrain(get_control(0, 3), 0.0f, 1.0f);
 
+	float thrust_x = math::constrain(get_control(0, 5), -1.0f, 1.0f); //PMEN - hijacking INDEX_SPOILERS = 5
+	float thrust_y = math::constrain(get_control(0, 6), -1.0f, 1.0f); //PMEN - hijacking INDEX_AIRBRAKES = 6
+
 	// clean out class variable used to capture saturation
 	_saturation_status.value = 0;
 
 	// Do the mixing using the strategy given by the current Airmode configuration
 	switch (_airmode) {
 	case Airmode::roll_pitch:
-		mix_airmode_rp(roll, pitch, yaw, thrust, outputs);
+		mix_airmode_rp(roll, pitch, yaw, thrust, thrust_x, thrust_y, outputs);
 		break;
 
 	case Airmode::roll_pitch_yaw:
-		mix_airmode_rpy(roll, pitch, yaw, thrust, outputs);
+		mix_airmode_rpy(roll, pitch, yaw, thrust, thrust_x, thrust_y, outputs);
 		break;
 
 	case Airmode::disabled:
 	default: // just in case: default to disabled
-		mix_airmode_disabled(roll, pitch, yaw, thrust, outputs);
+		mix_airmode_disabled(roll, pitch, yaw, thrust, thrust_x, thrust_y, outputs);
 		break;
 	}
 

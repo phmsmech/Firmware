@@ -712,7 +712,7 @@ MulticopterPositionControl::Run()
 			float vec_thr_scl = ((float)_param_mpc_vec_thr_en.get() * _param_mpc_vec_thr_scl.get()); // PMEN Changes
 			_vt_sp.thrust_n = local_pos_sp.thrust[0] * vec_thr_scl; // PMEN Changes - TODO:ROTATION?
 			_vt_sp.thrust_e = local_pos_sp.thrust[1] * vec_thr_scl; // PMEN Changes - TODO:ROTATION?
-			//TODO: CHECK IF local_pos_sp.thrust[2] ALSO NEEDS TO BE SCALED TO COMPENSATE FOR VEC THRU
+			//TODO: PMEN - CHECK IF local_pos_sp.thrust[2] ALSO NEEDS TO BE SCALED TO COMPENSATE FOR VEC THRU
 
 			_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust[0] * (1.0f - vec_thr_scl),
 								local_pos_sp.thrust[1] * (1.0f - vec_thr_scl),

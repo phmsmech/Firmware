@@ -379,9 +379,12 @@ MulticopterAttitudeControl::control_vector_thrust()
 		_v_vt_sp.thrust_e = 0.0f;
 	}
 
-	_vector_thrust_sp(0) = _v_vt_sp.thrust_n;
-	_vector_thrust_sp(1) = _v_vt_sp.thrust_e;
-	_vector_thrust_sp(2) = _v_att_sp.thrust_body[2]; //TODO: PMEN - taken from attitude setpoint (needs to check if this is necessary)
+	_vector_thrust_sp.zero();
+	_vector_thrust_sp = Quatf(_v_att.q).conjugate_inversed(Vector3f(_v_vt_sp.thrust_n, _v_vt_sp.thrust_e, 0.0));
+	_vector_thrust_sp(0) = math::constrain(_vector_thrust_sp(0), -1.0f, 1.0f);
+	_vector_thrust_sp(1) = math::constrain(_vector_thrust_sp(1), -1.0f, 1.0f);
+	_vector_thrust_sp(2) = 0.0f  ; //TODO: PMEN - from attitude setpoint (needs to check if this is necessary)
+	//ROTATION (CHECK IF SHOULD BE TRANSPOSED)
 
 }
 
@@ -429,11 +432,14 @@ MulticopterAttitudeControl::publish_rate_controller_status()
 void
 MulticopterAttitudeControl::publish_actuator_controls()
 {
-	//TODO: PMEN ADD PUBLICATION TO ACTUATOR CONTROL HERE
 	_actuators.control[0] = (PX4_ISFINITE(_att_control(0))) ? _att_control(0) : 0.0f;
 	_actuators.control[1] = (PX4_ISFINITE(_att_control(1))) ? _att_control(1) : 0.0f;
 	_actuators.control[2] = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
 	_actuators.control[3] = (PX4_ISFINITE(_thrust_sp)) ? _thrust_sp : 0.0f;
+	_actuators.control[5] = (PX4_ISFINITE(_vector_thrust_sp(0))) ? _vector_thrust_sp(0) :
+				0.0f; //PMEN - hijacking INDEX_SPOILERS = 5
+	_actuators.control[6] = (PX4_ISFINITE(_vector_thrust_sp(1))) ? _vector_thrust_sp(1) :
+				0.0f; //PMEN - hijacking INDEX_AIRBRAKES = 6
 	_actuators.control[7] = (float)_landing_gear.landing_gear;
 	// note: _actuators.timestamp_sample is set in MulticopterAttitudeControl::Run()
 	_actuators.timestamp = hrt_absolute_time();

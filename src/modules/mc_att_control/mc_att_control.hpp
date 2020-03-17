@@ -193,7 +193,7 @@ private:
 	float _loop_update_rate_hz{initial_update_rate_hz};          /**< current rate-controller loop update rate in [Hz] */
 
 	matrix::Vector3f _rates_sp;			/**< angular rates setpoint */
-	matrix::Vector3f _vector_thrust_sp;		/**< vector thrust setpoint */
+	matrix::Vector3f _vector_thrust_sp{};		/**< vector thrust setpoint */
 
 	matrix::Vector3f _att_control;			/**< attitude control vector */
 	float		_thrust_sp{0.0f};		/**< thrust setpoint */
@@ -263,7 +263,9 @@ private:
 
 		(ParamInt<px4::params::MC_AIRMODE>) _param_mc_airmode,
 
-		(ParamInt<px4::params::CBRK_RATE_CTRL>) _param_cbrk_rate_ctrl
+		(ParamInt<px4::params::CBRK_RATE_CTRL>) _param_cbrk_rate_ctrl,
+
+		(ParamFloat<px4::params::MPC_VEC_THR_XY_P>) _param_mpc_vec_thr_xy_p 		/**< gain for vector thrust XY direction. */
 
 	)
 
