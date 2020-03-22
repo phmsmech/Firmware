@@ -375,7 +375,7 @@ MulticopterAttitudeControl::control_vector_thrust()
 
 	// reinitialize the setpoint while not armed to make sure no value from the last mode or flight is still kept
 	if (!_v_control_mode.flag_armed || (!_v_control_mode.flag_control_position_enabled
-					    && !_v_control_mode.flag_control_velocity_enabled)) {
+					    && !_v_control_mode.flag_control_velocity_enabled && !_v_control_mode.flag_control_altitude_enabled)) {
 		_v_vt_sp.thrust_n = 0.0f;
 		_v_vt_sp.thrust_e = 0.0f;
 	}
