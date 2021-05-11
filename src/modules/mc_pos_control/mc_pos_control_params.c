@@ -800,4 +800,19 @@ PARAM_DEFINE_INT32(MPC_VEC_THR_EN, 0);
  */
 PARAM_DEFINE_FLOAT(MPC_VEC_THR_SCL, 0.0f);
 
+/**
+ * Reverse tilt angle for horizontal thrust [rad]
+ *
+ * If Vector Thrust is enabled (MPC_VEC_THR_EN = 1)
+ * this parameter determines the tilt angle (direction from RC).
+ * No tilt angle (MPC_VEC_THR_ANG = 0.0).
+ * 10 deg tilt angle (MPC_VEC_THR_ANG = 0.174).
+ * WARNING: Might crash if too high
+ *
+ * @min 0.000
+ * @max 0.349
+ * @decimal 2
+ * @group Multicopter Position Control
+ */
+PARAM_DEFINE_FLOAT(MPC_VEC_THR_ANG, 0.0f);
 

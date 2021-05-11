@@ -121,6 +121,9 @@ MulticopterAttitudeControl::parameters_updated()
 	_man_tilt_max = math::radians(_param_mpc_man_tilt_max.get());
 
 	_actuators_0_circuit_breaker_enabled = circuit_breaker_enabled_by_val(_param_cbrk_rate_ctrl.get(), CBRK_RATE_CTRL_KEY);
+
+	//PMEN ADDING VECTOR THRUST GAIN _param_mpc_vec_thr_xy_p
+	_vec_thr_xy_p = _param_mpc_vec_thr_xy_p.get();
 }
 
 void
@@ -382,8 +385,8 @@ MulticopterAttitudeControl::control_vector_thrust()
 
 	_vector_thrust_sp.zero();
 	_vector_thrust_sp = Quatf(_v_att.q).conjugate_inversed(Vector3f(_v_vt_sp.thrust_n, _v_vt_sp.thrust_e, 0.0));
-	_vector_thrust_sp(0) = math::constrain(_vector_thrust_sp(0), -1.0f, 1.0f);
-	_vector_thrust_sp(1) = math::constrain(_vector_thrust_sp(1), -1.0f, 1.0f);
+	_vector_thrust_sp(0) = math::constrain(_vector_thrust_sp(0) * _vec_thr_xy_p, -1.0f, 1.0f);
+	_vector_thrust_sp(1) = math::constrain(_vector_thrust_sp(1) * _vec_thr_xy_p, -1.0f, 1.0f);
 	_vector_thrust_sp(2) = 0.0f  ; //TODO: PMEN - from attitude setpoint (needs to check if this is necessary)
 	//ROTATION (CHECK IF SHOULD BE TRANSPOSED)
 

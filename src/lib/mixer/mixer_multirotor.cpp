@@ -352,6 +352,17 @@ void MultirotorMixer::mix_yaw(float yaw, float *outputs)
 	// and allow some yaw response at maximum thrust
 	minimize_saturation(_tmp_array, outputs, _saturation_status, 0.f, 1.15f);
 
+	//PMEN:test to reduce saturation HT
+	for (unsigned i = 0; i < _rotor_count; i++) {
+			_tmp_array[i] = multirotor_vt_config[i].vtx_scale;
+		}
+	minimize_saturation(_tmp_array, outputs, _saturation_status, 0.f, 1.f, true);
+
+for (unsigned i = 0; i < _rotor_count; i++) {
+			_tmp_array[i] = multirotor_vt_config[i].vty_scale;
+		}
+	minimize_saturation(_tmp_array, outputs, _saturation_status, 0.f, 1.f, true);
+
 	for (unsigned i = 0; i < _rotor_count; i++) {
 		_tmp_array[i] = _rotors[i].thrust_scale;
 	}

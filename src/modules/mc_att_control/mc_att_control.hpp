@@ -273,6 +273,6 @@ private:
 
 	matrix::Vector3f _acro_rate_max;	/**< max attitude rates in acro mode */
 	float _man_tilt_max;			/**< maximum tilt allowed for manual flight [rad] */
-
+	float _vec_thr_xy_p; 			/**< gain for vector thrust XY direction. */
 };
 

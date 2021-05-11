@@ -67,6 +67,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_trajectory_waypoint.h>
 #include <uORB/topics/vehicle_vector_thrust_setpoint.h>
+#include <uORB/topics/rc_channels.h>
 
 #include "PositionControl.hpp"
 #include "Utility/ControlMath.hpp"
@@ -128,6 +129,7 @@ private:
 	uORB::Subscription _parameter_update_sub{ORB_ID(parameter_update)};		/**< notification of parameter updates */
 	uORB::Subscription _att_sub{ORB_ID(vehicle_attitude)};				/**< vehicle attitude */
 	uORB::Subscription _home_pos_sub{ORB_ID(home_position)}; 			/**< home position */
+	uORB::Subscription _rc_channels_sub{ORB_ID(rc_channels)}; 			/**< home position */
 
 	hrt_abstime	_time_stamp_last_loop{0};		/**< time stamp of last loop iteration */
 
@@ -148,6 +150,7 @@ private:
 	vehicle_control_mode_s	_control_mode{};		/**< vehicle control mode */
 	vehicle_local_position_s _local_pos{};			/**< vehicle local position */
 	home_position_s	_home_pos{};			/**< home position */
+	rc_channels_s _rc_channels{};			/**< PMEN RC channels*/
 	landing_gear_s _landing_gear{};
 	vehicle_vector_thrust_setpoint_s _vt_sp{};	/**< vehicle vector thrust setpoint */
 
@@ -173,7 +176,8 @@ private:
 		(ParamFloat<px4::params::MPC_THR_MAX>) _param_mpc_thr_max,
 		(ParamFloat<px4::params::MPC_Z_VEL_P>) _param_mpc_z_vel_p,
 		(ParamInt<px4::params::MPC_VEC_THR_EN>) _param_mpc_vec_thr_en,  /**< enable vector thrust*/
-		(ParamFloat<px4::params::MPC_VEC_THR_SCL>) _param_mpc_vec_thr_scl  /**< scaling for vector thrust mode */
+		(ParamFloat<px4::params::MPC_VEC_THR_SCL>) _param_mpc_vec_thr_scl,  /**< scaling for vector thrust mode */
+		(ParamFloat<px4::params::MPC_VEC_THR_ANG>) _param_mpc_vec_thr_ang /**< tilt angle for horizontal thrust */ /* PMEN */
 	);
 
 	control::BlockDerivative _vel_x_deriv; /**< velocity derivative in x */
@@ -421,6 +425,7 @@ MulticopterPositionControl::poll_subscriptions()
 	_vehicle_land_detected_sub.update(&_vehicle_land_detected);
 	_control_mode_sub.update(&_control_mode);
 	_home_pos_sub.update(&_home_pos);
+	_rc_channels_sub.update(&_rc_channels); //PMEN
 
 	if (_att_sub.updated()) {
 		vehicle_attitude_s att;
@@ -714,12 +719,28 @@ MulticopterPositionControl::Run()
 			_vt_sp.thrust_e = local_pos_sp.thrust[1] * vec_thr_scl; // PMEN Changes - TODO:ROTATION?
 			//TODO: PMEN - CHECK IF local_pos_sp.thrust[2] ALSO NEEDS TO BE SCALED TO COMPENSATE FOR VEC THRU
 
+			if ((_param_mpc_vec_thr_en.get() == 1) && (_param_mpc_vec_thr_scl.get() >= 1.0f) && (_rc_channels.channels[5] > 0.0f)){
+			
+				float vec_thr_ang = 0.0f;
+
+				vec_thr_ang = _param_mpc_vec_thr_ang.get();
+				
+				_att_sp.roll_body = vec_thr_ang*cosf(((_rc_channels.channels[6] + 1.0f)/2.0f)*6.2857142f);
+				_att_sp.pitch_body = vec_thr_ang*sinf(((_rc_channels.channels[6] + 1.0f)/2.0f)*6.2857142f);
+				matrix::Quatf q_sp = matrix::Eulerf(_att_sp.roll_body, _att_sp.pitch_body, local_pos_sp.yaw);
+				q_sp.copyTo(_att_sp.q_d);
+				_att_sp.q_d_valid = true;
+				_att_sp.thrust_body[2] = local_pos_sp.thrust[2];
+
+			} else {
 			_att_sp = ControlMath::thrustToAttitude(matrix::Vector3f(local_pos_sp.thrust[0] * (1.0f - vec_thr_scl),
 								local_pos_sp.thrust[1] * (1.0f - vec_thr_scl),
 								local_pos_sp.thrust[2]), local_pos_sp.yaw); // PMEN Changes
-			_att_sp.yaw_sp_move_rate = _control.getYawspeedSetpoint();
-			_att_sp.fw_control_yaw = false;
-			_att_sp.apply_flaps = false;
+			}
+
+				_att_sp.yaw_sp_move_rate = _control.getYawspeedSetpoint();
+				_att_sp.fw_control_yaw = false;
+				_att_sp.apply_flaps = false;
 
 			// publish attitude setpoint
 			// Note: this requires review. The reason for not sending
